@@ -40,8 +40,14 @@ class IconGetter:
                 cv2img = cv2.cvtColor(numpy.array(pilimg), cv2.COLOR_RGBA2BGRA)
                 cv2.imwrite(temp + "/" + item_id + ".jpg", cv2img,
                             [int(cv2.IMWRITE_JPEG_QUALITY), 10])
-            fname = "items_" + self.server + "_" + self.fg._version
+            fname = "icons_" + self.server + "_" + self.fg._version
             shutil.make_archive(os.path.join(path, fname), "zip", temp)
+
+            # set fname to github actions output
+            github_output = os.environ.get('GITHUB_OUTPUT')
+            if github_output:
+                with open(github_output, 'w') as f:
+                    f.write(f"resourcename={fname}\n")
 
     def _get_item_table(self):
         res = {}

@@ -49,5 +49,5 @@ jobs:
       - name: Upload New Resources as Artifacts
         uses: "actions/upload-artifact@v3"
         with:
-          name: "icon-packs-${{ inputs.server }}"
+          name: "${{ steps.icongetter.outputs.resourcename }}" # written to GITHUB_OUTPUT in IconGetter.py
           path: ${{ steps.icongetter.outputs.outdir }}
