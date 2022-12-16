@@ -42,6 +42,9 @@ jobs:
           poetry run python penguin_recognizer_tools/icon/IconGetter.py --server ${{ inputs.server }} --output-dir $outdir
           # output outdir as an output
           echo "outdir=$outdir" >> $GITHUB_OUTPUT
+        env:
+          # set CHAT_MASK from secret
+          CHAT_MASK: ${{ secrets.CHAT_MASK }}
 
       - name: Upload New Resources as Artifacts
         uses: "actions/upload-artifact@v3"
