@@ -143,4 +143,4 @@ if __name__ == "__main__":
         "--output-dir", help="output directory of the zip file", type=str, default=".")
     args = parser.parse_args()
     ig = IconGetter(args.server)
-    ig.make_zip(args.path)
+    ig.make_zip(args.output_dir)
