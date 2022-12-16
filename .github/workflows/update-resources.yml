@@ -56,17 +56,17 @@ jobs:
         uses: "actions/github-script@v6"
         with:
           script: |
-            # get recent 5 releases
+            // get recent 5 releases
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 5
             })
 
-            # check if release already exists: find release that contains the sha512 hash of the new resources
+            // check if release already exists: find release that contains the sha512 hash of the new resources
             const release = releases.data.find(release => release.body.includes("${{ steps.icongetter.outputs.resource-sha512 }}"))
 
-            # if release does not exist, create a new release
+            // if release does not exist, create a new release
             if (release) {
               console.log("Release already exists")
               core.setOutput("release-exists", true)
