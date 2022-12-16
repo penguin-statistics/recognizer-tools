@@ -1,0 +1,46 @@
+name: Compile New Resources
+
+on:
+  # trigger on manual dispatch
+  workflow_dispatch:
+    inputs:
+      server:
+        description: "Server to compile new resource for"
+        required: true
+        default: "CN"
+        type: choice
+        options:
+          - CN
+          - US
+          - JP
+          - KR
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install Poetry
+        run: |
+          pip install poetry==${{ inputs.poetry-version }}
+
+      - name: Run IconGetter for Specified Server
+        id: icongetter
+        run: |
+          # acquire a tmp directory
+          outdir=$(mktemp -d)
+          poetry run python penguin_recognizer_tools/icon/IconGetter.py --server ${{ inputs.server }} --output-dir $outdir
+          # output outdir as an output
+          echo "outdir=$outdir" >> $GITHUB_OUTPUT
+
+      - name: Upload New Resources as Artifacts
+        uses: "actions/upload-artifact@v3"
+        with:
+          name: "icon-packs-${{ inputs.server }}"
+          path: ${{ steps.icongetter.outputs.outdir }}

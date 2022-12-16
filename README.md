@@ -5,9 +5,7 @@
 # Penguin Statistics - Recognizer Tools
 
 [![Last Commit](https://img.shields.io/github/last-commit/penguin-statistics/recognizer-tools)](https://github.com/penguin-statistics/recognizer-tools/commits/v4)
-
-<!-- [![GitHub Actions Status](https://github.com/penguin-statistics/recognizer-tools/actions/workflows/build-release.yml/badge.svg)](https://github.com/penguin-statistics/recognizer-tools/actions/workflows/build-release.yml) -->
-
+[![GitHub Actions Status](https://github.com/penguin-statistics/recognizer-tools/actions/workflows/build-release.yml/badge.svg)](https://github.com/penguin-statistics/recognizer-tools/actions/workflows/build-release.yml)
 ![GitHub](https://img.shields.io/github/license/penguin-statistics/recognizer-tools)
 
 ## Usage

@@ -15,7 +15,7 @@ AES_IV_LENGTH = 16
 def decrypt(text_asset_file) -> dict:
     data = text_asset_file.script
     raw = _text_asset_decrypt(data)
-    return bson.decode(raw)
+    return bson.loads(raw)
 
 
 def _unpad(s): return s[0:(len(s) - s[-1])]
