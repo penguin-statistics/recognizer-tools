@@ -49,5 +49,46 @@ jobs:
       - name: Upload New Resources as Artifacts
         uses: "actions/upload-artifact@v3"
         with:
-          name: "${{ steps.icongetter.outputs.resourcename }}" # written to GITHUB_OUTPUT in IconGetter.py
-          path: ${{ steps.icongetter.outputs.outdir }}
+          name: "${{ steps.icongetter.outputs.resource-name }}" # written to GITHUB_OUTPUT in IconGetter.py
+          path: ${{ steps.icongetter.outputs.resource-dir }}
+
+      - name: "GitHub Release: Check if release already exists"
+        uses: "actions/github-script@v6"
+        with:
+          script: |
+            # get recent 5 releases
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 5
+            })
+
+            # check if release already exists: find release that contains the sha512 hash of the new resources
+            const release = releases.data.find(release => release.body.includes("${{ steps.icongetter.outputs.resource-sha512 }}"))
+
+            # if release does not exist, create a new release
+            if (release) {
+              console.log("Release already exists")
+              core.setOutput("release-exists", true)
+            } else {
+              console.log("Release does not exist")
+              core.setOutput("release-exists", false)
+            }
+
+      - name: "GitHub Release: Create fake tag"
+        if: ${{ !steps.release-check.outputs.release-exists }}
+        run: |
+          git checkout --orphan __temp
+          git rm -rf .
+          git commit --allow-empty --message ${{ steps.icongetter.outputs.resource-name }}
+          git tag ${{ steps.icongetter.outputs.resource-name }} || exit 0 # do nothing if the tag already exists
+          git push --tags
+
+      - name: "GitHub Release: Create release"
+        if: ${{ !steps.release-check.outputs.release-exists }}
+        uses: "softprops/action-gh-release@v1"
+        with:
+          files: ${{ steps.icongetter.outputs.resource-dir }}/*
+          tag_name: ${{ steps.icongetter.outputs.resource-name }}
+          name: ${{ steps.icongetter.outputs.resource-name }}
+          body: ${{ steps.icongetter.outputs.resource-sha512 }}

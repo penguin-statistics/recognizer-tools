@@ -1,7 +1,12 @@
+import hashlib
 import logging
 import os
 import shutil
 import tempfile
+from os import PathLike
+from pathlib import Path
+from typing import Union
+from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 
 import coloredlogs
 import cv2
@@ -40,14 +45,34 @@ class IconGetter:
                 cv2img = cv2.cvtColor(numpy.array(pilimg), cv2.COLOR_RGBA2BGRA)
                 cv2.imwrite(temp + "/" + item_id + ".jpg", cv2img,
                             [int(cv2.IMWRITE_JPEG_QUALITY), 10])
-            fname = "icons_" + self.server + "_" + self.fg._version
-            shutil.make_archive(os.path.join(path, fname), "zip", temp)
+            filename = "icons_" + self.server + "_" + self.fg._version
+
+            zip_savepath_without_ext = os.path.join(path, filename)
+            zip_savepath = zip_savepath_without_ext + ".zip"
+            src_path = Path(temp).expanduser().resolve(strict=True)
+            with ZipFile(zip_savepath, 'w', ZIP_STORED) as zf:
+                for file in src_path.rglob('*'):
+                    # zf.write(file, file.relative_to(src_path))
+                    with file.open('rb') as f:
+                        info = ZipInfo(str(file.relative_to(src_path)))
+                        zf.writestr(info, f.read())
+
+            logging.debug('make_zip: zip file created at: %s',
+                          zip_savepath_without_ext)
+
+            # calculate sha512 hash for the zip file
+            zip_hash = None
+            with open(zip_savepath, 'rb') as f:
+                zip_hash = hashlib.sha512(f.read()).hexdigest()
 
             # set fname to github actions output
             github_output = os.environ.get('GITHUB_OUTPUT')
             if github_output:
                 with open(github_output, 'w') as f:
-                    f.write(f"resourcename={fname}\n")
+                    f.write(f"resource-name={filename}\n")
+                    f.write(f"resource-path={zip_savepath}\n")
+                    f.write(f"resource-dir={path}\n")
+                    f.write(f"resource-sha512={zip_hash}\n")
 
     def _get_item_table(self):
         res = {}
