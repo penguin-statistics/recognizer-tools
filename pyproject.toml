@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "penguin-recognizer-tools"
+version = "0.1.0"
+description = ""
+authors = [
+    "KumoSiunaus <kumosiunaus@gmail.com>",
+    "GalvinGao <me@galvingao.com>"
+]
+readme = "README.md"
+packages = [{include = "penguin_recognizer_tools"}]
+
+
+[tool.poetry.dependencies]
+python = "^3.10"
+bson = "^0.5.10"
+numpy = "^1.23.5"
+unitypy = "^1.9.24"
+pillow = "^9.3.0"
+opencv-python = "^4.6.0.66"
+requests = "^2.28.1"
+python-dotenv = "^0.21.0"
+pycryptodome = "^3.16.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
