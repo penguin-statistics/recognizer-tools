@@ -78,6 +78,8 @@ jobs:
       - name: "GitHub Release: Create fake tag"
         if: ${{ !steps.release-check.outputs.release-exists }}
         run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
           git checkout --orphan __temp
           git rm -rf .
           git commit --allow-empty --message ${{ steps.icongetter.outputs.resource-name }}
