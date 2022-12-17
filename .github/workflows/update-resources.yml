@@ -53,6 +53,7 @@ jobs:
           path: ${{ steps.icongetter.outputs.resource-dir }}
 
       - name: "GitHub Release: Check if release already exists"
+        id: release-check
         uses: "actions/github-script@v6"
         with:
           script: |
