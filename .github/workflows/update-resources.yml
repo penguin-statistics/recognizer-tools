@@ -45,5 +45,5 @@ jobs:
           UPYUN_USERNAME: ${{ secrets.UPYUN_USERNAME }}
           PENGUIN_V3_ADMIN_KEY: ${{ secrets.PENGUIN_V3_ADMIN_KEY }}
           PYTHONUNBUFFERED: "1"
-          # if force is true, set SKIP_UPDATE_CHECK to true
-          SKIP_UPDATE_CHECK: ${{ github.event.inputs.force == 'true' }}
+          # if force is true, set SKIP_UPDATE_CHECK to "1"
+          SKIP_UPDATE_CHECK: ${{ github.event.inputs.force == 'true' && '1' || '' }}
