@@ -1,19 +1,11 @@
 name: Compile New Resources
 
 on:
+  # everyday at 08:08 UTC (arknights typically updates at 16:00 UTC+8)
+  schedule:
+    - cron: "8 8 * * *"
   # trigger on manual dispatch
   workflow_dispatch:
-    inputs:
-      server:
-        description: "Server to compile new resource for"
-        required: true
-        default: "CN"
-        type: choice
-        options:
-          - CN
-          - US
-          - JP
-          - KR
 
 jobs:
   compile:
@@ -37,61 +29,15 @@ jobs:
       - name: Run IconGetter for Specified Server
         id: icongetter
         run: |
-          # acquire a tmp directory
-          outdir=$(mktemp -d)
-          poetry run python penguin_recognizer_tools/icon/IconGetter.py --server ${{ inputs.server }} --output-dir $outdir
-          # output outdir as an output
-          echo "outdir=$outdir" >> $GITHUB_OUTPUT
+          poetry run python penguin_recognizer_tools/icon/MultiServerIconPackUpdater.py
         env:
-          # set CHAT_MASK from secret
           CHAT_MASK: ${{ secrets.CHAT_MASK }}
-
-      - name: Upload New Resources as Artifacts
-        uses: "actions/upload-artifact@v3"
-        with:
-          name: "${{ steps.icongetter.outputs.resource-name }}" # written to GITHUB_OUTPUT in IconGetter.py
-          path: ${{ steps.icongetter.outputs.resource-dir }}
-
-      - name: "GitHub Release: Check if release already exists"
-        id: release-check
-        uses: "actions/github-script@v6"
-        with:
-          script: |
-            // get recent 5 releases
-            const releases = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              per_page: 5
-            })
-
-            // check if release already exists: find release that contains the sha512 hash of the new resources
-            const release = releases.data.find(release => release.body.includes("${{ steps.icongetter.outputs.resource-sha512 }}"))
-
-            // if release does not exist, create a new release
-            if (release) {
-              console.log("Release already exists")
-              core.setOutput("release-exists", true)
-            } else {
-              console.log("Release does not exist")
-              core.setOutput("release-exists", false)
-            }
-
-      - name: "GitHub Release: Create fake tag"
-        if: ${{ !steps.release-check.outputs.release-exists }}
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git checkout --orphan __temp
-          git rm -rf .
-          git commit --allow-empty --message ${{ steps.icongetter.outputs.resource-name }}
-          git tag ${{ steps.icongetter.outputs.resource-name }} || exit 0 # do nothing if the tag already exists
-          git push --tags
-
-      - name: "GitHub Release: Create release"
-        if: ${{ !steps.release-check.outputs.release-exists }}
-        uses: "softprops/action-gh-release@v1"
-        with:
-          files: ${{ steps.icongetter.outputs.resource-dir }}/*
-          tag_name: ${{ steps.icongetter.outputs.resource-name }}
-          name: ${{ steps.icongetter.outputs.resource-name }}
-          body: ${{ steps.icongetter.outputs.resource-sha512 }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_S3_REGION: ${{ secrets.AWS_S3_REGION }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          UPYUN_ENDPOINT: ${{ secrets.UPYUN_ENDPOINT }}
+          UPYUN_PASSWORD: ${{ secrets.UPYUN_PASSWORD }}
+          UPYUN_USERNAME: ${{ secrets.UPYUN_USERNAME }}
+          PENGUIN_V3_ADMIN_KEY: ${{ secrets.PENGUIN_V3_ADMIN_KEY }}
+          PYTHONUNBUFFERED: "1"

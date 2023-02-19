@@ -36,6 +36,9 @@ class FileGetter:
                 warnings.warn("MD5 not match")
             yield f
 
+    def version(self):
+        return self._version
+
     def _get_file(self, filename: str):
         if filename in self._file_list:
             url = self._root_url + \

@@ -1,20 +1,17 @@
-import hashlib
 import logging
 import os
-import shutil
 import tempfile
-from os import PathLike
 from pathlib import Path
-from typing import Union
-from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
+from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
+import UnityPy
 import coloredlogs
 import cv2
 import numpy
-import UnityPy
-from decrypt import decrypt
-from FileGetter import FileGetter
 from PIL import Image
+
+from FileGetter import FileGetter
+from decrypt import decrypt
 
 logger = logging.getLogger(__name__)
 coloredlogs.install(level='DEBUG')
@@ -28,9 +25,13 @@ class IconGetter:
         "activity/commonassets.ab"  # activity items
     ]
 
-    def __init__(self, server) -> None:
+    def __init__(self, server, lazy: bool = False) -> None:
         self.server = server
         self.fg = FileGetter(server)
+        if not lazy:
+            self.load()
+
+    def load(self):
         self.item_table = self._get_item_table()
         self.item_list = self._get_item_list()
         self.bkg_img_list = self._get_bkg_img()
@@ -45,10 +46,10 @@ class IconGetter:
                 cv2img = cv2.cvtColor(numpy.array(pilimg), cv2.COLOR_RGBA2BGRA)
                 cv2.imwrite(temp + "/" + item_id + ".jpg", cv2img,
                             [int(cv2.IMWRITE_JPEG_QUALITY), 10])
-            filename = "icons_" + self.server + "_" + self.fg._version
+            resource_name = "icons_" + self.server + "_" + self.fg._version
+            filename = resource_name + ".zip"
 
-            zip_savepath_without_ext = os.path.join(path, filename)
-            zip_savepath = zip_savepath_without_ext + ".zip"
+            zip_savepath = os.path.join(path, filename)
             src_path = Path(temp).expanduser().resolve(strict=True)
             with ZipFile(zip_savepath, 'w', ZIP_STORED) as zf:
                 for file in src_path.rglob('*'):
@@ -58,21 +59,23 @@ class IconGetter:
                         zf.writestr(info, f.read())
 
             logging.debug('make_zip: zip file created at: %s',
-                          zip_savepath_without_ext)
+                          zip_savepath)
 
-            # calculate sha512 hash for the zip file
-            zip_hash = None
-            with open(zip_savepath, 'rb') as f:
-                zip_hash = hashlib.sha512(f.read()).hexdigest()
+            return zip_savepath
 
-            # set fname to github actions output
-            github_output = os.environ.get('GITHUB_OUTPUT')
-            if github_output:
-                with open(github_output, 'w') as f:
-                    f.write(f"resource-name={filename}\n")
-                    f.write(f"resource-path={zip_savepath}\n")
-                    f.write(f"resource-dir={path}\n")
-                    f.write(f"resource-sha512={zip_hash}\n")
+            # # calculate sha512 hash for the zip file
+            # zip_hash = None
+            # with open(zip_savepath, 'rb') as f:
+            #     zip_hash = hashlib.sha512(f.read()).hexdigest()
+
+            # # set fname to github actions output
+            # github_output = os.environ.get('GITHUB_OUTPUT')
+            # if github_output:
+            #     with open(github_output, 'w') as f:
+            #         f.write(f"resource-name={filename}\n")
+            #         f.write(f"resource-path={zip_savepath}\n")
+            #         f.write(f"resource-dir={path}\n")
+            #         f.write(f"resource-sha512={zip_hash}\n")
 
     def _get_item_table(self):
         res = {}
@@ -158,7 +161,7 @@ class IconGetter:
                                 x = round(offset_old.X)
                                 y = bkg_img.height - item_img.height - \
                                     round(offset_old.Y)
-                                offset = (x+1, y+1)
+                                offset = (x + 1, y + 1)
                                 bkg_img.alpha_composite(item_img, offset)
                                 res[item_id] = bkg_img
         logging.debug(
@@ -168,6 +171,7 @@ class IconGetter:
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--server", help="server name", type=str, default="CN")
     parser.add_argument(
