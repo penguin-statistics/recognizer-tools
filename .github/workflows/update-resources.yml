@@ -6,6 +6,11 @@ on:
     - cron: "15 8 * * *"
   # trigger on manual dispatch
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Force update even if there is no new version"
+        required: false
+        default: "false"
 
 jobs:
   update:
@@ -40,3 +45,5 @@ jobs:
           UPYUN_USERNAME: ${{ secrets.UPYUN_USERNAME }}
           PENGUIN_V3_ADMIN_KEY: ${{ secrets.PENGUIN_V3_ADMIN_KEY }}
           PYTHONUNBUFFERED: "1"
+          # if force is true, set SKIP_UPDATE_CHECK to true
+          SKIP_UPDATE_CHECK: ${{ github.event.inputs.force == 'true' }}
