@@ -11,7 +11,7 @@ from penguin_recognizer_tools.icon.MultiUploader import MultiUploader
 logger = logging.getLogger(__name__)
 coloredlogs.install(level="LOG_LEVEL" in os.environ and os.environ["LOG_LEVEL"] or "INFO")
 
-SKIP_UPDATE_CHECK = False
+SKIP_UPDATE_CHECK = "SKIP_UPDATE_CHECK" in os.environ
 HOST = "https://penguin-stats.io"
 
 
