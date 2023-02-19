@@ -1,10 +1,8 @@
-import hashlib
 import logging
 import os
 import tempfile
 
 import coloredlogs
-from github import Github
 import requests as r
 
 from penguin_recognizer_tools.icon.IconGetter import IconGetter
@@ -13,13 +11,8 @@ from penguin_recognizer_tools.icon.MultiUploader import MultiUploader
 logger = logging.getLogger(__name__)
 coloredlogs.install(level="LOG_LEVEL" in os.environ and os.environ["LOG_LEVEL"] or "INFO")
 
-gh = Github("GITHUB_TOKEN" in os.environ and os.environ["GITHUB_TOKEN"] or None)
-
 SKIP_UPDATE_CHECK = False
 HOST = "https://penguin-stats.io"
-
-
-# HOST = "http://localhost:9010"
 
 
 class ServerIconPackUpdater:
