@@ -1,9 +1,9 @@
 name: Compile New Resources
 
 on:
-  # everyday at 08:08 UTC (arknights typically updates at 16:00 UTC+8)
+  # everyday at 08:15 UTC (arknights typically updates at 16:00 UTC+8)
   schedule:
-    - cron: "8 8 * * *"
+    - cron: "15 8 * * *"
   # trigger on manual dispatch
   workflow_dispatch:
 
