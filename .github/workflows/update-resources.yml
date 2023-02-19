@@ -1,4 +1,4 @@
-name: Compile New Resources
+name: Update Icon Pack
 
 on:
   # everyday at 08:15 UTC (arknights typically updates at 16:00 UTC+8)
@@ -26,8 +26,7 @@ jobs:
         run: |
           poetry install
 
-      - name: Run IconGetter for Specified Server
-        id: icongetter
+      - name: Run MultiServerIconPackUpdater
         run: |
           poetry run python penguin_recognizer_tools/icon/MultiServerIconPackUpdater.py
         env:
