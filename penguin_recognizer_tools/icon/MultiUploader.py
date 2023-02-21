@@ -16,14 +16,16 @@ import logging
 # - UPYUN_BUCKET
 # - UPYUN_ENDPOINT
 class MultiUploader:
-    def __init__(self, local_path: str, remote_path: str) -> None:
+    def __init__(self, local_path: str, remote_path: str, enable_s3: bool = True, enable_upyun: bool = True):
         self.local_path = local_path
         self.remote_path = remote_path
         self.logger = logging.getLogger("MultiUploader")
         self.logger.info("uploading %s to %s", local_path, remote_path)
 
-        self.upload_s3()
-        self.upload_upyun()
+        if enable_s3:
+            self.upload_s3()
+        if enable_upyun:
+            self.upload_upyun()
 
     def upload_s3(self):
         import boto3
@@ -44,10 +46,6 @@ class MultiUploader:
         import ftplib
         ftp = ftplib.FTP(os.environ["UPYUN_ENDPOINT"])
         ftp.login(os.environ["UPYUN_USERNAME"], os.environ["UPYUN_PASSWORD"])
-        remote_folder = os.path.dirname(self.remote_path)
-        if remote_folder != "":
-            ftp.mkd(remote_folder)
-        ftp.cwd("/" + remote_folder)
 
         with open(self.local_path, 'rb') as f:
             ftp.storbinary('STOR ' + self.remote_path, f)
@@ -57,4 +55,4 @@ class MultiUploader:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    MultiUploader("items.zip", "newdir/newdir2/items.zip")
+    MultiUploader("items.zip", "newdir/newdir2/items.zip", enable_s3=False, enable_upyun=True)
