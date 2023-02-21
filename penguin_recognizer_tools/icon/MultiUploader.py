@@ -47,7 +47,7 @@ class MultiUploader:
         remote_folder = os.path.dirname(self.remote_path)
         if remote_folder != "":
             ftp.mkd(remote_folder)
-        ftp.cwd(remote_folder)
+        ftp.cwd("/" + remote_folder)
 
         with open(self.local_path, 'rb') as f:
             ftp.storbinary('STOR ' + self.remote_path, f)
