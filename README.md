@@ -29,3 +29,9 @@ poetry run python path/to/script.py
 ```bash
 poetry shell
 ```
+
+## Contributors
+
+This project is made possible by the following contributors. Contributions are always welcome!
+
+[![Contributors](https://contrib.rocks/image?repo=penguin-statistics/recognizer-tools)](https://github.com/penguin-statistics/recognizer-tools/graphs/contributors)
