@@ -45,8 +45,7 @@ class IconGetter:
                           len(self.item_img_list))
             for item_id, pilimg in self.item_img_list.items():
                 cv2img = cv2.cvtColor(numpy.array(pilimg), cv2.COLOR_RGBA2BGRA)
-                cv2.imwrite(temp + "/" + item_id + ".jpg", cv2img,
-                            [int(cv2.IMWRITE_JPEG_QUALITY), 10])
+                cv2.imwrite(temp + "/" + item_id + ".png", cv2img)
             resource_name = "icons_" + self.server + "_" + self.fg._version
             filename = resource_name + ".zip"
 
