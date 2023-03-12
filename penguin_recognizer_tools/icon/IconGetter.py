@@ -157,39 +157,40 @@ class IconGetter:
     def _get_item_img(self):
         res = {}
         for fname in IconGetter.file_list:
-            with self.fg.get(fname) as f:
-                env = UnityPy.load(f)
-                for obj in env.objects:
-                    if obj.type.name == "Sprite":
-                        sprite_file = obj.read()
-                        if (sprite_file.name in self.item_list):
-                            item_img = sprite_file.image
-                            for item in self.item_list[sprite_file.name]:
-                                item_id = item["itemId"]
-                                rarity = item["rarity"]
-                                if "act24" in item_id:
-                                    bkg_img: Image.Image = self.bkg_img_list["act24side"][rarity].copy()
-                                else:
-                                    bkg_img: Image.Image = self.bkg_img_list["item"][rarity].copy()
-                                offset_ld = {"x": 0, "y": 0}
-                                rect = sprite_file.m_Rect
-                                offset_ld["x"] += (bkg_img.width -
-                                                   rect.width) / 2.0
-                                offset_ld["y"] += (bkg_img.height -
-                                                   rect.height) / 2.0
+            try:
+                with self.fg.get(fname) as f:
+                    env = UnityPy.load(f)
+                    for obj in env.objects:
+                        if obj.type.name == "Sprite":
+                            sprite_file = obj.read()
+                            if (sprite_file.name in self.item_list):
+                                item_img = sprite_file.image
+                                for item in self.item_list[sprite_file.name]:
+                                    item_id = item["itemId"]
+                                    rarity = item["rarity"]
+                                    if "act24" in item_id:
+                                        bkg_img: Image.Image = self.bkg_img_list["act24side"][rarity].copy()
+                                    else:
+                                        bkg_img: Image.Image = self.bkg_img_list["item"][rarity].copy()
+                                    offset_ld = {"x": 0, "y": 0}
+                                    rect = sprite_file.m_Rect
+                                    offset_ld["x"] += (bkg_img.width -
+                                                       rect.width) / 2.0
+                                    offset_ld["y"] += (bkg_img.height -
+                                                       rect.height) / 2.0
 
-                                texture_rect_offset = sprite_file.m_RD.textureRectOffset
-                                offset_ld["x"] += texture_rect_offset.X
-                                offset_ld["y"] += texture_rect_offset.Y
+                                    texture_rect_offset = sprite_file.m_RD.textureRectOffset
+                                    offset_ld["x"] += texture_rect_offset.X
+                                    offset_ld["y"] += texture_rect_offset.Y
 
-                                offset = (
-                                    round(offset_ld["x"]),
-                                    bkg_img.height - item_img.height - round(offset_ld["y"]))
-                                bkg_img.alpha_composite(item_img, offset)
-                                res[item_id] = bkg_img
-                        # else:
-                        #     logging.warning(
-                        #         "_get_item_img: sprite %s not in item_list", sprite_file.name)
+                                    offset = (
+                                        round(offset_ld["x"]),
+                                        bkg_img.height - item_img.height - round(offset_ld["y"]))
+                                    bkg_img.alpha_composite(item_img, offset)
+                                    res[item_id] = bkg_img
+            except Exception as e:
+                logging.warning(
+                    "_get_item_img: error while processing %s: %s", fname, e)
         logging.debug(
             "_get_item_img: item images loaded with %d items", len(res))
         return res

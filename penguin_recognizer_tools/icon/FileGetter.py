@@ -27,6 +27,8 @@ class FileGetter:
     @contextmanager
     def get(self, filename):
         z = self._get_file(filename)
+        if z is None:
+            raise FileNotFoundError
         with z.open(filename) as f:
             h = hashlib.md5()
             while _ := f.read():
@@ -46,7 +48,7 @@ class FileGetter:
                       .replace('#', '__')
             return zipfile.ZipFile(io.BytesIO(requests.get(url).content), 'r')
         else:
-            raise FileNotFoundError
+            return None
 
     @staticmethod
     def _get_json(json_url: str):
