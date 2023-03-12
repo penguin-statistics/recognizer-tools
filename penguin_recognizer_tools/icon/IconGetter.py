@@ -143,6 +143,10 @@ class IconGetter:
             img = Image.open(
                 os.path.join(os.path.dirname(__file__), "background", f"sprite_item_r{i}.png"))
             res["item"][i] = img
+        for i in range(4):
+            img = Image.open(
+                os.path.join(os.path.dirname(__file__), "background", f"charm_r{i}.png"))
+            res["act24side"][i] = img
         for i in range(6):
             img = Image.open(
                 os.path.join(os.path.dirname(__file__), "background", f"act24side_melding_{i + 1}_bg.png"))
