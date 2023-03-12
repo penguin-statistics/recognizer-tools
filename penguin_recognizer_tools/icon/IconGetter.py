@@ -105,7 +105,7 @@ class IconGetter:
         penguin_stages = self.fg._get_json(
             "https://penguin-stats.io/PenguinStats/api/v2/stages?server=" + self.server)
         for stage in penguin_stages:
-            if stage["stageId"] == "recruit":
+            if (stage["stageId"] == "recruit") or ("isGacha" in stage):
                 continue
             if "dropInfos" in stage:
                 for item in stage["dropInfos"]:
@@ -123,7 +123,7 @@ class IconGetter:
 
         res = {}
         for item_id in item_set:
-            if item_id == "furni":
+            if item_id == "furni" or item_id == "4001_2000":
                 continue
             icon_id = self.item_table[item_id]["iconId"]
             rarity = self.item_table[item_id]["rarity"]
@@ -143,9 +143,9 @@ class IconGetter:
             img = Image.open(
                 os.path.join(os.path.dirname(__file__), "background", f"sprite_item_r{i}.png"))
             res["item"][i] = img
-        for i in range(1, 6):
+        for i in range(6):
             img = Image.open(
-                os.path.join(os.path.dirname(__file__), "background", f"act24side_melding_{i}_bg.png"))
+                os.path.join(os.path.dirname(__file__), "background", f"act24side_melding_{i + 1}_bg.png"))
             res["act24side"][i] = img
         logging.debug("_get_bkg_img: item background loaded")
         return res
@@ -163,24 +163,24 @@ class IconGetter:
                             for item in self.item_list[sprite_file.name]:
                                 item_id = item["itemId"]
                                 rarity = item["rarity"]
-                                if item_id.startswith("act24side"):
-                                    bkg_img = \
-                                        self.bkg_img_list["act24side"][rarity + 1].copy()
+                                if "act24" in item_id:
+                                    bkg_img: Image.Image = self.bkg_img_list["act24side"][rarity].copy()
                                 else:
-                                    bkg_img = \
-                                        self.bkg_img_list["item"][rarity].copy()
-                                offset_old = sprite_file.m_RD.textureRectOffset
-                                x = round(offset_old.X)
-                                y = bkg_img.height - item_img.height - \
-                                    round(offset_old.Y)
-                                if item_id.startswith("act24side"):
-                                    inner_height = item_img.height
-                                    inner_width = item_img.width
-                                    outer_height = bkg_img.height
-                                    outer_width = bkg_img.width
-                                    offset = ((outer_width - inner_width) // 2, (outer_height - inner_height) // 2)
-                                else:
-                                    offset = (x + 1, y + 1)
+                                    bkg_img: Image.Image = self.bkg_img_list["item"][rarity].copy()
+                                offset_ld = {"x": 0, "y": 0}
+                                rect = sprite_file.m_Rect
+                                offset_ld["x"] += (bkg_img.width -
+                                                   rect.width) / 2.0
+                                offset_ld["y"] += (bkg_img.height -
+                                                   rect.height) / 2.0
+
+                                texture_rect_offset = sprite_file.m_RD.textureRectOffset
+                                offset_ld["x"] += texture_rect_offset.X
+                                offset_ld["y"] += texture_rect_offset.Y
+
+                                offset = (
+                                    round(offset_ld["x"]),
+                                    bkg_img.height - item_img.height - round(offset_ld["y"]))
                                 bkg_img.alpha_composite(item_img, offset)
                                 res[item_id] = bkg_img
                         # else:
