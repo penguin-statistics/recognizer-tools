@@ -9,6 +9,7 @@ import requests
 
 
 class FileGetter:
+
     _NETWORK_CONFIG_URLS = {
         'CN': 'https://ak-conf.hypergryph.com/config/prod/official/network_config',
         'JP': 'https://ak-conf.arknights.jp/config/prod/official/network_config',
@@ -35,18 +36,13 @@ class FileGetter:
                 warnings.warn("MD5 not match")
             yield f
 
-    def version(self):
-        return self._version
-
     def _get_file(self, filename: str):
         if filename in self._file_list:
             url = self._root_url + \
-                  (filename.rsplit('.', 1)[0] + ".dat") \
-                      .replace('/', '_') \
-                      .replace('#', '__')
-            return zipfile.ZipFile(io.BytesIO(requests.get(url).content), 'r')
-        else:
-            raise FileNotFoundError
+                (filename.rsplit('.', 1)[0] + ".dat")\
+                .replace('/', '_')\
+                .replace('#', '__')
+        return zipfile.ZipFile(io.BytesIO(requests.get(url).content), 'r')
 
     @staticmethod
     def _get_json(json_url: str):
@@ -59,24 +55,23 @@ class FileGetter:
         return json.loads(network_config["content"])
 
     def _get_version(self) -> str:
-        func_ver = self._network_config["funcVer"]
-        self.version_url = self._network_config["configs"][func_ver]["network"]["hv"] \
+        funcVer = self._network_config["funcVer"]
+        self.version_url = self._network_config["configs"][funcVer]["network"]["hv"]\
             .replace("{0}", self._platform)
         return self._get_json(self.version_url)["resVersion"]
 
     def _get_file_list(self) -> dict:
-        func_ver = self._network_config["funcVer"]
-        self._root_url = self._network_config["configs"][func_ver]["network"]["hu"] \
-                         + f"/{self._platform}/assets/{self._version}/"
+        funcVer = self._network_config["funcVer"]
+        self._root_url = self._network_config["configs"][funcVer]["network"]["hu"]\
+            + f"/{self._platform}/assets/{self._version}/"
         self.file_list_url = self._root_url + "hot_update_list.json"
         file_arr: list = self._get_json(self.file_list_url)["abInfos"]
         return {_["name"]: _["md5"] for _ in file_arr}
 
 
 if __name__ == "__main__":
-    fg = FileGetter("CN")
+    fg = FileGetter("KR")
     with fg.get("gamedata/excel/item_table.ab") as f:
         import UnityPy
-
         env = UnityPy.load(f)
         print(fg._get_json(fg.version_url))

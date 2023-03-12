@@ -1,21 +1,15 @@
-import os
-
 import bson
 from Crypto.Cipher import AES
-from dotenv import load_dotenv
 
-load_dotenv()
-
-# read CHAT_MASK from .env file
-CHAT_MASK = os.getenv('CHAT_MASK')
+CHAT_MASK = 'UITpAi82pHAWwnzqHRMCwPonJLIB3WCl'
 AES_KEY_LENGTH = 16
 AES_IV_LENGTH = 16
 
 
-def decrypt(text_asset_file) -> dict:
-    data = text_asset_file.script
+def decrypt(textAssetFile) -> dict:
+    data = textAssetFile.script
     raw = _text_asset_decrypt(data)
-    return bson.loads(raw)
+    return bson.decode(raw)
 
 
 def _unpad(s): return s[0:(len(s) - s[-1])]

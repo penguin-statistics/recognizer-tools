@@ -1,23 +1,18 @@
-import logging
 import os
+import shutil
 import tempfile
-from pathlib import Path
-from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
-import UnityPy
-import coloredlogs
 import cv2
 import numpy
+import UnityPy
 from PIL import Image
 
 from FileGetter import FileGetter
 from decrypt import decrypt
 
-logger = logging.getLogger(__name__)
-coloredlogs.install(level='DEBUG')
 
+class iconGetter:
 
-class IconGetter:
     file_list = [
         "spritepack/ui_item_icons_h1_0.ab",  # basic items
         "spritepack/ui_item_icons_h1_acticon_0.ab",  # randomMaterial
@@ -26,57 +21,35 @@ class IconGetter:
         "activity/[uc]act24side.ab"  # activity items
     ]
 
-    def __init__(self, server, lazy: bool = False) -> None:
+    def __init__(self, server) -> None:
         self.server = server
         self.fg = FileGetter(server)
-        if not lazy:
-            self.load()
-
-    def load(self):
+        print(self.fg.server, self.fg._version)
+        print(self.fg.file_list_url)
         self.item_table = self._get_item_table()
+        print(f"item_table: {len(self.item_table)}")
         self.item_list = self._get_item_list()
+        print(f"item_list: {len(self.item_list)}")
         self.bkg_img_list = self._get_bkg_img()
+        print(f"bkg_img_list: {len(self.bkg_img_list)}")
         self.item_img_list = self._get_item_img()
+        print(f"item_img_list: {len(self.item_img_list)}")
 
-    def make_zip(self, path):
+    def make_zip(self, path, hq=False):
         with tempfile.TemporaryDirectory() as temp:
-            logging.debug('make_zip: making temp dir: %s', temp)
-            logging.debug('make_zip: adding %d files to zip',
-                          len(self.item_img_list))
-            for item_id, pilimg in self.item_img_list.items():
-                cv2img = cv2.cvtColor(numpy.array(pilimg), cv2.COLOR_RGBA2BGRA)
-                cv2.imwrite(temp + "/" + item_id + ".jpg", cv2img,
-                            [int(cv2.IMWRITE_JPEG_QUALITY), 10])
-            resource_name = "icons_" + self.server + "_" + self.fg._version
-            filename = resource_name + ".zip"
-
-            zip_savepath = os.path.join(path, filename)
-            src_path = Path(temp).expanduser().resolve(strict=True)
-            with ZipFile(zip_savepath, 'w', ZIP_STORED) as zf:
-                for file in src_path.rglob('*'):
-                    # zf.write(file, file.relative_to(src_path))
-                    with file.open('rb') as f:
-                        info = ZipInfo(str(file.relative_to(src_path)))
-                        zf.writestr(info, f.read())
-
-            logging.debug('make_zip: zip file created at: %s',
-                          zip_savepath)
-
-            return zip_savepath
-
-            # # calculate sha512 hash for the zip file
-            # zip_hash = None
-            # with open(zip_savepath, 'rb') as f:
-            #     zip_hash = hashlib.sha512(f.read()).hexdigest()
-
-            # # set fname to github actions output
-            # github_output = os.environ.get('GITHUB_OUTPUT')
-            # if github_output:
-            #     with open(github_output, 'w') as f:
-            #         f.write(f"resource-name={filename}\n")
-            #         f.write(f"resource-path={zip_savepath}\n")
-            #         f.write(f"resource-dir={path}\n")
-            #         f.write(f"resource-sha512={zip_hash}\n")
+            if hq:
+                for itemId, pilimg in self.item_img_list.items():
+                    cv2img = cv2.cvtColor(numpy.array(
+                        pilimg), cv2.COLOR_RGBA2BGRA)
+                    cv2.imwrite(temp + "/" + itemId + ".png", cv2img)
+            else:
+                for itemId, pilimg in self.item_img_list.items():
+                    cv2img = cv2.cvtColor(numpy.array(
+                        pilimg), cv2.COLOR_RGBA2BGRA)
+                    cv2.imwrite(temp + "/" + itemId + ".jpg", cv2img,
+                                [int(cv2.IMWRITE_JPEG_QUALITY), 10])
+            fname = "items_" + self.server + "_" + self.fg._version
+            shutil.make_archive(os.path.join(path, fname), "zip", temp)
 
     def _get_item_table(self):
         res = {}
@@ -84,120 +57,99 @@ class IconGetter:
             env = UnityPy.load(f)
             for obj in env.objects:
                 if obj.type.name == "TextAsset":
-                    text_asset_file = obj.read()
-                    item_table = decrypt(text_asset_file)
+                    textAssetFile = obj.read()
+                    item_table = decrypt(textAssetFile)
                     for _, item in item_table["items"].items():
-                        item_id = item["itemId"]
+                        itemId = item["itemId"]
                         rarity = item["rarity"]
-                        icon_id = item["iconId"]
-                        res[item_id] = {
-                            "iconId": icon_id, "rarity": rarity}
+                        iconId = item["iconId"]
+                        res[itemId] = {
+                            "iconId": iconId, "rarity": rarity}
                     break
-        logging.debug(
-            "_get_item_table: item_table loaded with %d items", len(res))
         return res
 
     def _get_item_list(self):
         item_set = set()
-
-        logging.debug(
-            "_get_item_list: fetching item list from Penguin Statistics API...")
         penguin_stages = self.fg._get_json(
             "https://penguin-stats.io/PenguinStats/api/v2/stages?server=" + self.server)
         for stage in penguin_stages:
-            if stage["stageId"] == "recruit":
+            if (stage["stageId"] == "recruit") or ("isGacha" in stage):
                 continue
             if "dropInfos" in stage:
                 for item in stage["dropInfos"]:
                     if ("itemId" in item):
-                        logger.debug("stage: %s, item: %s", stage["stageId"], item["itemId"])
                         item_set.add(item["itemId"])
-                    # else:
-                    #     logger.warning("item without itemId: %s", item)
             if "recognitionOnly" in stage:
                 for item in stage["recognitionOnly"]:
                     item_set.add(item)
 
-        logging.debug(
-            "_get_item_list: got %d de-duplicated and cleaned items from Penguin Statistics API", len(item_set))
-
         res = {}
-        for item_id in item_set:
-            if item_id == "furni":
+        for itemId in item_set:
+            if (itemId == "furni") or (itemId == "4001_2000"):
                 continue
-            icon_id = self.item_table[item_id]["iconId"]
-            rarity = self.item_table[item_id]["rarity"]
-            if icon_id not in res:
-                res[icon_id] = []
-            res[icon_id].append({"itemId": item_id, "rarity": rarity})
-
-        logging.debug(
-            "_get_item_list: item_list loaded with %d icons", len(res))
-
+            iconId = self.item_table[itemId]["iconId"]
+            rarity = self.item_table[itemId]["rarity"]
+            if iconId not in res:
+                res[iconId] = []
+            res[iconId].append({"itemId": itemId, "rarity": rarity})
         return res
 
     @staticmethod
     def _get_bkg_img():
-        res = {"item": {}, "charm": {}, "act24side": {}}
+        res = {"item": {}, "charm": {}, "act24": {}}
         for i in range(6):
             img = Image.open(
-                os.path.join(os.path.dirname(__file__), "background", f"sprite_item_r{i}.png"))
+                os.path.join(os.path.dirname(__file__), f"background\\sprite_item_r{i}.png"))
             res["item"][i] = img
-        for i in range(1, 6):
+        for i in range(4):
             img = Image.open(
-                os.path.join(os.path.dirname(__file__), "background", f"act24side_melding_{i}_bg.png"))
-            res["act24side"][i] = img
-        logging.debug("_get_bkg_img: item background loaded")
+                os.path.join(os.path.dirname(__file__), f"background\\charm_r{i}.png"))
+            res["charm"][i] = img
+        for i in range(6):
+            img = Image.open(
+                os.path.join(os.path.dirname(__file__), f"background\\act24side_melding_{i+1}_bg.png"))
+            res["act24"][i] = img
         return res
 
     def _get_item_img(self):
         res = {}
-        for fname in IconGetter.file_list:
+        for fname in iconGetter.file_list:
             with self.fg.get(fname) as f:
                 env = UnityPy.load(f)
                 for obj in env.objects:
                     if obj.type.name == "Sprite":
-                        sprite_file = obj.read()
-                        if (sprite_file.name in self.item_list):
-                            item_img = sprite_file.image
-                            for item in self.item_list[sprite_file.name]:
-                                item_id = item["itemId"]
+                        spriteFile = obj.read()
+                        if (spriteFile.name in self.item_list):
+                            item_img = spriteFile.image
+                            for item in self.item_list[spriteFile.name]:
+                                itemId = item["itemId"]
                                 rarity = item["rarity"]
-                                if item_id.startswith("act24side"):
-                                    bkg_img = \
-                                        self.bkg_img_list["act24side"][rarity + 1].copy()
+                                if "act24" in itemId:
+                                    bkg_img: Image.Image = self.bkg_img_list["act24"][rarity].copy(
+                                    )
                                 else:
-                                    bkg_img = \
-                                        self.bkg_img_list["item"][rarity].copy()
-                                offset_old = sprite_file.m_RD.textureRectOffset
-                                x = round(offset_old.X)
-                                y = bkg_img.height - item_img.height - \
-                                    round(offset_old.Y)
-                                if item_id.startswith("act24side"):
-                                    inner_height = item_img.height
-                                    inner_width = item_img.width
-                                    outer_height = bkg_img.height
-                                    outer_width = bkg_img.width
-                                    offset = ((outer_width - inner_width) // 2, (outer_height - inner_height) // 2)
-                                else:
-                                    offset = (x + 1, y + 1)
+                                    bkg_img: Image.Image = self.bkg_img_list["item"][rarity].copy(
+                                    )
+
+                                offset_ld = {"x": 0, "y": 0}
+                                m_Rect = spriteFile.m_Rect
+                                offset_ld["x"] += (bkg_img.width -
+                                                   m_Rect.width) / 2.0
+                                offset_ld["y"] += (bkg_img.height -
+                                                   m_Rect.height) / 2.0
+
+                                textureRectOffset = spriteFile.m_RD.textureRectOffset
+                                offset_ld["x"] += textureRectOffset.X
+                                offset_ld["y"] += textureRectOffset.Y
+
+                                offset = (
+                                    round(offset_ld["x"]),
+                                    bkg_img.height - item_img.height - round(offset_ld["y"]))
                                 bkg_img.alpha_composite(item_img, offset)
-                                res[item_id] = bkg_img
-                        # else:
-                        #     logging.warning(
-                        #         "_get_item_img: sprite %s not in item_list", sprite_file.name)
-        logging.debug(
-            "_get_item_img: item images loaded with %d items", len(res))
+                                res[itemId] = bkg_img
         return res
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--server", help="server name", type=str, default="CN")
-    parser.add_argument(
-        "--output-dir", help="output directory of the zip file", type=str, default=".")
-    args = parser.parse_args()
-    ig = IconGetter(args.server)
-    ig.make_zip(args.output_dir)
+    ig = iconGetter("CN")
+    ig.make_zip("D:/R", hq=False)
