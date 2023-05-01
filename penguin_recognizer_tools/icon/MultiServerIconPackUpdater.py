@@ -78,5 +78,5 @@ class MultiServerIconPackUpdater:
 
 if __name__ == "__main__":
     tempdir = tempfile.TemporaryDirectory()
-    u = MultiServerIconPackUpdater(servers=["CN", "US", "JP", "KR"], output_dir=tempdir.name, skip_upload=True)
+    u = MultiServerIconPackUpdater(servers=["CN", "US", "JP", "KR"], output_dir=tempdir.name, skip_upload=False)
     u.invoke()
