@@ -16,13 +16,14 @@ HOST = "https://penguin-stats.io"
 
 
 class ServerIconPackUpdater:
-    def __init__(self, server: str, output_dir: str, current_version: str) -> None:
+    def __init__(self, server: str, output_dir: str, current_version: str, skip_upload: bool = False) -> None:
         self.server = server
         self.icon_getter = IconGetter(server, True)
         self.output_dir = output_dir
         self.logger = logging.getLogger("ServerIconPackUpdater." + server)
         self.latest_version = self.icon_getter.fg.version()
         self.current_version = current_version
+        self.skip_upload = skip_upload
 
     def invoke(self):
         if not SKIP_UPDATE_CHECK:
@@ -35,6 +36,10 @@ class ServerIconPackUpdater:
         self.icon_getter.load()
         save_path = self.icon_getter.make_zip(self.output_dir)
         self.logger.info("zip file saved at %s", save_path)
+
+        if self.skip_upload:
+            self.logger.info("upload skipped")
+            return
 
         filename = os.path.basename(save_path)
         filename_without_ext = os.path.splitext(filename)[0]
@@ -54,11 +59,12 @@ class ServerIconPackUpdater:
 
 
 class MultiServerIconPackUpdater:
-    def __init__(self, servers: list[str], output_dir: str) -> None:
+    def __init__(self, servers: list[str], output_dir: str, skip_upload: bool = False) -> None:
         self.current_versions = r.get(HOST + "/PenguinStats/api/v2/config").json()["recognition"]["items-resources"][
             "prefix"]
         self.output_dir = output_dir
         self.servers = servers
+        self.skip_upload = skip_upload
 
     def invoke(self):
         for server in self.servers:
@@ -66,10 +72,11 @@ class MultiServerIconPackUpdater:
             if current_version:
                 current_version = current_version.removeprefix(server + "/")
             ServerIconPackUpdater(server, self.output_dir,
-                                  current_version).invoke()
+                                  current_version=current_version,
+                                  skip_upload=self.skip_upload).invoke()
 
 
 if __name__ == "__main__":
     tempdir = tempfile.TemporaryDirectory()
-    u = MultiServerIconPackUpdater(servers=["CN", "US", "JP", "KR"], output_dir=tempdir.name)
+    u = MultiServerIconPackUpdater(servers=["CN", "US", "JP", "KR"], output_dir=tempdir.name, skip_upload=True)
     u.invoke()

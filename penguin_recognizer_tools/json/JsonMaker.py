@@ -44,13 +44,14 @@ class Maker():
                 self.stage_index[code] = {}
             self.stage_index[code][difficulty] = {
                 "stageId": stage_id,
-                "drops": drops,
+                "drops": list(set(drops)),
                 "existence": True
             }
 
 
 if __name__ == "__main__":
     import pathlib
+
     current_path = pathlib.Path(__file__).parent.resolve()
     m = Maker()
     with open(current_path.joinpath("item_index.json"), 'w', encoding="utf-8") as f:
