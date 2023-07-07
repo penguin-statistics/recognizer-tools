@@ -81,7 +81,16 @@ class IconGetter:
 
     def _get_item_table(self):
         res = {}
-        with self.fg.get("gamedata/excel/item_table.ab") as f:
+        with self.fg.get("gamedata/excel/item_table.ab", text_asset=True) as f:
+            if type(f) == dict:
+                for _, item in f["items"].items():
+                    item_id = item["itemId"]
+                    rarity = item["rarity"]
+                    icon_id = item["iconId"]
+                    res[item_id] = {
+                        "iconId": icon_id, "rarity": rarity}
+                return res
+
             env = UnityPy.load(f)
             for obj in env.objects:
                 if obj.type.name == "TextAsset":

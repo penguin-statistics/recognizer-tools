@@ -23,7 +23,8 @@ class IconGetter:
         "spritepack/ui_item_icons_h1_acticon_0.ab",  # randomMaterial
         "spritepack/ui_item_icons_h1_apsupply_0.ab",  # ap supply
         "activity/commonassets.ab",  # activity items
-        "activity/[uc]act24side.ab"  # activity items
+        "activity/[uc]act24side.ab",  # activity items
+        "activity/[uc]act25side.ab"  # activity items
     ]
 
     def __init__(self, server, lazy: bool = False) -> None:

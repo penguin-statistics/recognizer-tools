@@ -7,6 +7,8 @@ from contextlib import contextmanager
 
 import requests
 
+from penguin_recognizer_tools.icon.decrypt import decrypt
+
 
 class FileGetter:
     _NETWORK_CONFIG_URLS = {
@@ -17,6 +19,13 @@ class FileGetter:
         'TW': 'https://ak-conf.txwy.tw/config/prod/official/network_config',
     }
 
+    _TEXT_ASSET_ROOT_URLS = {
+        'CN': 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/',
+        'JP': 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/ja_JP/',
+        'US': 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/en_US/',
+        'KR': 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/ko_KR/',
+    }
+
     def __init__(self, server) -> None:
         self.server = server
         self._platform = "Android"
@@ -25,30 +34,31 @@ class FileGetter:
         self._file_list = self._get_file_list()
 
     @contextmanager
-    def get(self, filename):
-        z = self._get_file(filename)
+    def get(self, filename, **kwargs):
+        z = self._get_file(filename, **kwargs)
         if z is None:
             raise FileNotFoundError
-        with z.open(filename) as f:
-            h = hashlib.md5()
-            while _ := f.read():
-                h.update(_)
-            if h.hexdigest() != self._file_list[filename]:
-                warnings.warn("MD5 not match")
-            yield f
+        if type(z) == dict:
+            yield z
+        else:
+            with z.open(filename) as f:
+                yield f
 
     def version(self):
         return self._version
 
-    def _get_file(self, filename: str):
-        if filename in self._file_list:
-            url = self._root_url + \
-                  (filename.rsplit('.', 1)[0] + ".dat") \
-                      .replace('/', '_') \
-                      .replace('#', '__')
-            return zipfile.ZipFile(io.BytesIO(requests.get(url).content), 'r')
-        else:
-            return None
+    def _get_file(self, filename: str, text_asset=False):
+        text_asset_root_url = self._TEXT_ASSET_ROOT_URLS.get(self.server, None)
+        if text_asset_root_url is None:
+            text_asset_root_url = self._root_url
+        if text_asset:
+            url = text_asset_root_url + filename
+            return self._get_json(url.replace(".ab", ".json"))
+        url = self._root_url + \
+              (filename.rsplit('.', 1)[0] + ".dat") \
+                  .replace('/', '_') \
+                  .replace('#', '__')
+        return zipfile.ZipFile(io.BytesIO(requests.get(url).content), 'r')
 
     @staticmethod
     def _get_json(json_url: str):
@@ -77,8 +87,16 @@ class FileGetter:
 
 if __name__ == "__main__":
     fg = FileGetter("CN")
-    with fg.get("gamedata/excel/item_table.ab") as f:
+    with fg.get("activity/[uc]act25side.ab") as f:
         import UnityPy
 
+        with open("activity_[uc]act25side.ab", "wb") as ff:
+            ff.write(f.read())
+
         env = UnityPy.load(f)
+        for obj in env.objects:
+            if obj.type.name == "TextAsset":
+                text_asset_file = obj.read()
+                stage_table = decrypt(text_asset_file)
+                # print(stage_table)
         print(fg._get_json(fg.version_url))
